@@ -1,0 +1,108 @@
+name: BuildConnect CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+
+jobs:
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: buildconnect_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7
+        options: >- 
+          --health-cmd "redis-cli ping" --health-interval 10s
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements/development.txt
+      - name: Lint
+        run: |
+          cd backend
+          black --check .
+          flake8 . --max-line-length 120 --exclude migrations
+          isort --check-only .
+      - name: Run tests
+        env:
+          SECRET_KEY: ci-secret-key-not-for-production
+          DB_NAME: buildconnect_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_HOST: localhost
+          REDIS_URL: redis://localhost:6379/0
+          DJANGO_SETTINGS_MODULE: config.settings.development
+        run: |
+          cd backend
+          coverage run -m pytest tests/ -v --tb=short
+          coverage report --fail-under=70
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: cd frontend && npm ci
+      - run: cd frontend && npm run lint
+      - run: cd frontend && npm run type-check
+      - run: cd frontend && npm run build
+
+  deploy:
+    name: Deploy to Production
+    needs: [backend-tests, frontend-tests]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            set -e
+            cd /opt/buildconnect
+            git fetch origin main
+            git reset --hard origin/main
+            docker compose pull
+            docker compose up -d --build --remove-orphans
+            docker compose exec -T api python manage.py migrate --noinput
+            docker compose exec -T api python manage.py collectstatic --noinput
+            # Health check
+            sleep 10
+            curl -sf http://localhost/api/schema/ || exit 1
+            echo "Deployment successful"
+      - name: Notify Slack
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: "BuildConnect deploy ${{ job.status }} on ${{ github.sha }}"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
