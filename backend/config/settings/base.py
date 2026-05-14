@@ -83,7 +83,6 @@ DATABASES = {
         'HOST': config('DB_HOST', default='db'),
         'PORT': config('DB_PORT', default='5432'),
         'CONN_MAX_AGE': 60,
-        'OPTIONS': {'options': '-c default_transaction_isolation=read committed'},
     }
 }
 
