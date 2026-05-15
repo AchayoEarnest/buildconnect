@@ -14,15 +14,16 @@ export default function TopNav() {
   const [unread, setUnread] = useState(0)
   const [notifs, setNotifs] = useState<Notification[]>([])
 
-  const { data } = useQuery<Notification[]>({
+  const { data } = useQuery<any>({
     queryKey: ['notifications'],
     queryFn: () => apiClient.get('/notifications/').then((r) => r.data),
   })
 
   useEffect(() => {
     if (data) {
-      setNotifs(data)
-      setUnread(data.filter((n) => !n.is_read).length)
+      const list: Notification[] = Array.isArray(data) ? data : (data.results ?? [])
+      setNotifs(list)
+      setUnread(list.filter((n) => !n.is_read).length)
     }
   }, [data])
 
@@ -44,7 +45,6 @@ export default function TopNav() {
     <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
       <div />
       <div className="flex items-center gap-4">
-        {/* Notifications */}
         <div className="relative">
           <button onClick={() => setOpen(!open)}
             className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
@@ -78,14 +78,13 @@ export default function TopNav() {
           )}
         </div>
 
-        {/* Avatar */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white text-sm font-semibold">
             {user?.first_name?.charAt(0) ?? '?'}
           </div>
           <div className="hidden sm:block">
             <p className="text-sm font-medium text-gray-900 dark:text-white leading-none">{user?.full_name}</p>
-            <p className="text-xs text-gray-400 capitalize mt-0.5">{user?.role}</p>
+            <p className="text-xs text-gray-400 capitalize mt-0.5">{(user as any)?.role}</p>
           </div>
         </div>
       </div>

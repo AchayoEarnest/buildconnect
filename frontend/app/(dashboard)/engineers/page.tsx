@@ -16,6 +16,11 @@ export default function EngineersPage() {
     queryFn: () => profilesApi.listEngineers({ ...filters, search }),
   })
 
+  const results: EngineerProfile[] = Array.isArray(data)
+    ? data
+    : (data as any)?.results ?? []
+  const count = (data as any)?.count ?? results.length
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-8">
@@ -25,7 +30,6 @@ export default function EngineersPage() {
         </p>
       </div>
 
-      {/* Search bar */}
       <div className="relative mb-6">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input
@@ -52,9 +56,9 @@ export default function EngineersPage() {
             </div>
           ) : (
             <>
-              <p className="text-sm text-gray-500 mb-4">{data?.count ?? 0} engineers found</p>
+              <p className="text-sm text-gray-500 mb-4">{count} engineers found</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {data?.results.map((engineer: EngineerProfile) => (
+                {results.map((engineer: EngineerProfile) => (
                   <EngineerCard key={engineer.id} engineer={engineer} />
                 ))}
               </div>
