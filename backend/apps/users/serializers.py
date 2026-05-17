@@ -31,8 +31,12 @@ class UserSerializer(serializers.ModelSerializer):
                   'role', 'is_verified', 'date_joined']
         read_only_fields = ['id', 'is_verified', 'date_joined']
 
-
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['user'] = UserSerializer(self.user).data  # ← add this
+        return data
+
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)

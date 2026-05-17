@@ -8,11 +8,14 @@ export const projectsApi = {
   get: (id: number) =>
     apiClient.get<Project>(`/projects/${id}/`),
 
-  create: (data: Partial<Project>) =>
+  create: (data: Partial<Project> & { skills_req: string[]; milestones?: any[] }) =>
     apiClient.post<Project>('/projects/', data),
 
   update: (id: number, data: Partial<Project>) =>
     apiClient.patch<Project>(`/projects/${id}/`, data),
+
+  delete: (id: number) =>
+    apiClient.delete(`/projects/${id}/`),
 
   getBids: (projectId: number) =>
     apiClient.get<Bid[]>(`/projects/${projectId}/bids/`),
@@ -22,4 +25,10 @@ export const projectsApi = {
 
   updateBid: (bidId: number, status: 'accepted' | 'rejected') =>
     apiClient.patch<Bid>(`/bids/${bidId}/`, { status }),
+
+  getMyBids: (params?: Record<string, string>) =>
+    apiClient.get<PaginatedResponse<Bid & { project: Project }>>('/bids/my/', { params }),
+
+  releaseMilestone: (milestoneId: number) =>
+    apiClient.post(`/milestones/${milestoneId}/release/`),
 }
