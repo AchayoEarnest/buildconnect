@@ -13,6 +13,10 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
+        # Guard against unauthenticated connections that were closed before
+        # group_name was ever set (connect() returns early in that case).
+        if not hasattr(self, 'group_name'):
+            return
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def notification_message(self, event):

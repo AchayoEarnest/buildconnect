@@ -19,8 +19,13 @@ def send_notification(recipient_id, notif_type, title, body, link=''):
         {
             'type': 'notification_message',
             'data': {
-                'id': notif.id, 'type': notif_type,
-                'title': title, 'body': body, 'link': link,
+                'id':         notif.id,
+                'notif_type': notif_type,
+                'title':      title,
+                'body':       body,
+                'link':       link,
+                'is_read':    False,
+                'created_at': notif.created_at.isoformat(),
             }
         }
     )
