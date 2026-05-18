@@ -22,14 +22,16 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, tokens) => {
         Cookies.set('access_token',  tokens.access,  { expires: 1, sameSite: 'Lax' })
         Cookies.set('refresh_token', tokens.refresh, { expires: 7, sameSite: 'Lax' })
+        // user_role is read by Next.js middleware for admin route guarding
+        Cookies.set('user_role', user.role, { expires: 7, sameSite: 'Lax' })
         set({ user, tokens, isAuthenticated: true })
       },
 
       clearAuth: () => {
         Cookies.remove('access_token')
         Cookies.remove('refresh_token')
+        Cookies.remove('user_role')
         set({ user: null, tokens: null, isAuthenticated: false })
-        // Hard redirect so Next.js middleware re-evaluates
         if (typeof window !== 'undefined') window.location.href = '/login'
       },
 

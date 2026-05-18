@@ -1,7 +1,7 @@
 'use client'
 import { useAuthStore } from '@/lib/store/authStore'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -10,11 +10,11 @@ import {
 } from 'lucide-react'
 
 const adminLinks = [
-  { href: '/admin/users',     icon: Users,       label: 'User Management' },
-  { href: '/admin/verify',    icon: ShieldCheck, label: 'Verifications'   },
-  { href: '/admin/projects',  icon: FolderOpen,  label: 'Projects'        },
-  { href: '/admin/analytics', icon: BarChart2,   label: 'Analytics'       },
-  { href: '/admin/settings',  icon: Settings,    label: 'Platform Settings'},
+  { href: '/admin/users',     icon: Users,       label: 'User Management'   },
+  { href: '/admin/verify',    icon: ShieldCheck, label: 'Verifications'     },
+  { href: '/admin/projects',  icon: FolderOpen,  label: 'Projects'          },
+  { href: '/admin/analytics', icon: BarChart2,   label: 'Analytics'         },
+  { href: '/admin/settings',  icon: Settings,    label: 'Platform Settings' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -22,12 +22,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router   = useRouter()
   const pathname = usePathname()
 
+  // Hydration guard — prevents flash redirect before zustand rehydrates
+  const [hydrated, setHydrated] = useState(false)
+
   useEffect(() => {
+    setHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (!hydrated) return
     if (!isAuthenticated) { router.push('/login'); return }
     if (user?.role !== 'admin') { router.push('/feed') }
-  }, [isAuthenticated, user, router])
+  }, [hydrated, isAuthenticated, user, router])
 
-  if (user?.role !== 'admin') return null
+  if (!hydrated) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="w-8 h-8 rounded-full border-4 border-brand-600 border-t-transparent animate-spin" />
+      </div>
+    )
+  }
+
+  if (!isAuthenticated || user?.role !== 'admin') return null
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
@@ -45,7 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {adminLinks.map(({ href, icon: Icon, label }) => {
             const active = pathname === href || pathname.startsWith(href + '/')
             return (
