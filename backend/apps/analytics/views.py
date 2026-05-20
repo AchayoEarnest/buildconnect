@@ -8,7 +8,7 @@ from apps.payments.models import Payment
 from apps.projects.models import Project, Bid
 from apps.users.models import User
 from .models import ProfileView
-from core.permissions import IsEngineer
+from core.permissions import IsEngineer, IsClient
 
 
 class EngineerAnalyticsView(APIView):
@@ -19,7 +19,9 @@ class EngineerAnalyticsView(APIView):
         now      = timezone.now()
         last_30  = now - timedelta(days=30)
 
-        profile_views = ProfileView.objects.filter(engineer=engineer, viewed_at__gte=last_30).count()
+        profile_views = ProfileView.objects.filter(
+            engineer=engineer, viewed_at__gte=last_30
+        ).count()
 
         earnings = Payment.objects.filter(
             milestone__engineer=engineer, status='released'
@@ -33,11 +35,45 @@ class EngineerAnalyticsView(APIView):
         }
 
         return Response({
-            'profile_views_30d': profile_views,
-            'total_earnings':    earnings['total'] or 0,
+            'profile_views_30d':  profile_views,
+            'total_earnings':     earnings['total'] or 0,
             'completed_projects': earnings['count'],
-            'bid_stats':         bid_stats,
-            'avg_rating':        float(engineer.avg_rating),
+            'bid_stats':          bid_stats,
+            'avg_rating':         float(engineer.avg_rating),
+        })
+
+
+# FIX: was missing — clients got a 403 because the page always called /analytics/engineer/
+class ClientAnalyticsView(APIView):
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def get(self, request):
+        client  = request.user.client_profile
+        now     = timezone.now()
+        last_30 = now - timedelta(days=30)
+
+        projects   = Project.objects.filter(client=client)
+        open_count = projects.filter(status='open').count()
+        active     = projects.filter(status='in_progress').count()
+        completed  = projects.filter(status='completed').count()
+
+        total_bids     = Bid.objects.filter(project__client=client).count()
+        pending_bids   = Bid.objects.filter(project__client=client, status='pending').count()
+        accepted_bids  = Bid.objects.filter(project__client=client, status='accepted').count()
+
+        total_spent = Payment.objects.filter(
+            milestone__project__client=client, status='released'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        return Response({
+            'total_projects':    projects.count(),
+            'open_projects':     open_count,
+            'active_projects':   active,
+            'completed_projects': completed,
+            'total_bids_received': total_bids,
+            'pending_bids':      pending_bids,
+            'accepted_bids':     accepted_bids,
+            'total_spent':       total_spent,
         })
 
 

@@ -8,12 +8,18 @@ import { MessageCircle } from 'lucide-react'
 
 interface Props {
   engineerSlug: string
-  engineerId: string
+  // FIX: this must be the User UUID (engineer.user_id), not the profile integer id.
+  // Previously engineer.id (int) was passed, causing User.objects.get(id=...) to fail.
+  engineerUserId: string
   className?: string
   variant?: 'primary' | 'secondary'
 }
 
-export default function ContactButton({ engineerId, className = '', variant = 'secondary' }: Props) {
+export default function ContactButton({
+  engineerUserId,
+  className = '',
+  variant = 'secondary',
+}: Props) {
   const [loading, setLoading] = useState(false)
   const { isAuthenticated }   = useAuthStore()
   const router                = useRouter()
@@ -22,7 +28,7 @@ export default function ContactButton({ engineerId, className = '', variant = 's
     if (!isAuthenticated) { router.push('/login'); return }
     setLoading(true)
     try {
-      const { data } = await messagesApi.startConversation(engineerId)
+      const { data } = await messagesApi.startConversation(engineerUserId)
       router.push(`/messages/${data.id}`)
     } catch {
       toast.error('Could not start conversation')
@@ -31,7 +37,7 @@ export default function ContactButton({ engineerId, className = '', variant = 's
     }
   }
 
-  const base = 'flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-colors'
+  const base   = 'flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-colors'
   const styles = variant === 'primary'
     ? `${base} bg-brand-600 hover:bg-brand-700 text-white`
     : `${base} border border-brand-200 text-brand-600 hover:bg-brand-50 dark:border-brand-700 dark:text-brand-400 dark:hover:bg-brand-900/20`
@@ -39,7 +45,7 @@ export default function ContactButton({ engineerId, className = '', variant = 's
   return (
     <button onClick={handleContact} disabled={loading} className={`${styles} ${className}`}>
       <MessageCircle className="w-4 h-4" />
-      {loading ? 'Opening...' : 'Contact'}
+      {loading ? 'Opening…' : 'Contact'}
     </button>
   )
 }

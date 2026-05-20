@@ -46,6 +46,9 @@ export interface PortfolioProject {
 
 export interface EngineerProfile {
   id: number
+  // FIX: added — ContactButton needs the User UUID (not the profile integer id)
+  // to call StartConversationView which does User.objects.get(id=participant_id)
+  user_id: string
   slug: string
   full_name: string
   email?: string

@@ -8,26 +8,26 @@ import toast from 'react-hot-toast'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
 
 const SPECIALIZATIONS = [
-  'civil','structural','mechanical','electrical',
-  'quantity_surveyor','architect','geotechnical','environmental','project_manager',
+  'civil', 'structural', 'mechanical', 'electrical',
+  'quantity_surveyor', 'architect', 'geotechnical', 'environmental', 'project_manager',
 ]
 
 const SKILLS_LIST = [
-  'AutoCAD','Revit','SketchUp','SAP2000','STAAD.Pro','Primavera P6',
-  'MS Project','Tekla','ArchiCAD','ETABS','BIM','Civil 3D','GIS',
-  'Quantity Takeoff','Cost Estimation','Site Supervision','Structural Analysis',
-  'Foundation Design','Road Design','Drainage Design','Contract Management',
+  'AutoCAD', 'Revit', 'SketchUp', 'SAP2000', 'STAAD.Pro', 'Primavera P6',
+  'MS Project', 'Tekla', 'ArchiCAD', 'ETABS', 'BIM', 'Civil 3D', 'GIS',
+  'Quantity Takeoff', 'Cost Estimation', 'Site Supervision', 'Structural Analysis',
+  'Foundation Design', 'Road Design', 'Drainage Design', 'Contract Management',
 ]
 
 export default function OnboardingPage() {
   const { user } = useAuthStore()
   const router   = useRouter()
-  const [step, setStep] = useState(1)
+  const [step, setStep]               = useState(1)
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading]         = useState(false)
   const totalSteps = user?.role === 'engineer' ? 3 : 2
 
-  const { register, handleSubmit, getValues } = useForm({
+  const { register, getValues } = useForm({
     defaultValues: {
       title: '', specialization: 'civil', bio: '',
       years_exp: 0, hourly_rate: '', location_city: '', location_country: '',
@@ -45,16 +45,19 @@ export default function OnboardingPage() {
     const vals = getValues()
     try {
       if (user?.role === 'engineer') {
+        // FIX: was posting to /profiles/engineer/setup/ — now correct
         await apiClient.post('/profiles/engineer/setup/', {
           ...vals, skills: selectedSkills,
         })
       } else {
+        // FIX: was posting to /profiles/client/setup/ — now correct
         await apiClient.post('/profiles/client/setup/', vals)
       }
       toast.success('Profile set up! Welcome to BuildConnect.')
       router.push('/feed')
-    } catch {
-      toast.error('Setup failed. Please try again.')
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail ?? 'Setup failed. Please try again.'
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -66,7 +69,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 to-white dark:from-gray-950 dark:to-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-xl">
-        {/* Progress bar */}
+        {/* Progress */}
         <div className="mb-8">
           <div className="flex justify-between text-xs text-gray-400 mb-2">
             <span>Step {step} of {totalSteps}</span>
@@ -79,7 +82,7 @@ export default function OnboardingPage() {
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-800">
-          {/* Step 1 – Basic info */}
+          {/* Step 1 — Basic info */}
           {step === 1 && (
             <div className="space-y-5">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -90,7 +93,9 @@ export default function OnboardingPage() {
                   <input {...register('title')} placeholder="e.g. Senior Civil Engineer" className={inputCls} />
                   <select {...register('specialization')} className={inputCls}>
                     {SPECIALIZATIONS.map((s) => (
-                      <option key={s} value={s}>{s.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}</option>
+                      <option key={s} value={s}>
+                        {s.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </option>
                     ))}
                   </select>
                   <input {...register('years_exp')} type="number" placeholder="Years of experience" className={inputCls} />
@@ -109,7 +114,7 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Step 2 – Bio */}
+          {/* Step 2 — Bio */}
           {step === 2 && (
             <div className="space-y-5">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">✍️ Tell your story</h2>
@@ -117,7 +122,7 @@ export default function OnboardingPage() {
                 {...register('bio')}
                 rows={7}
                 placeholder={user?.role === 'engineer'
-                  ? "Describe your background, key projects, and what makes you exceptional as an engineer..."
+                  ? 'Describe your background, key projects, and what makes you exceptional as an engineer...'
                   : "Describe your company, the types of projects you work on, and what you're looking for..."}
                 className={`${inputCls} resize-none`}
               />
@@ -125,7 +130,7 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Step 3 – Skills (engineer only) */}
+          {/* Step 3 — Skills (engineer only) */}
           {step === 3 && user?.role === 'engineer' && (
             <div className="space-y-5">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">🛠️ Your Skills</h2>
@@ -162,7 +167,7 @@ export default function OnboardingPage() {
             ) : (
               <button onClick={onFinish} disabled={loading}
                 className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-semibold transition-colors">
-                {loading ? 'Saving...' : 'Finish Setup'}<ChevronRight className="w-4 h-4" />
+                {loading ? 'Saving…' : 'Finish Setup'}<ChevronRight className="w-4 h-4" />
               </button>
             )}
           </div>

@@ -30,7 +30,6 @@ class PortfolioProjectSerializer(serializers.ModelSerializer):
 
 
 class EngineerProfileListSerializer(serializers.ModelSerializer):
-    """Lightweight serializer for list views."""
     full_name = serializers.SerializerMethodField()
     skills    = SkillSerializer(many=True, read_only=True)
 
@@ -47,6 +46,8 @@ class EngineerProfileListSerializer(serializers.ModelSerializer):
 class EngineerProfileDetailSerializer(serializers.ModelSerializer):
     full_name      = serializers.SerializerMethodField()
     email          = serializers.SerializerMethodField()
+    # FIX: added user_id so ContactButton can pass the correct UUID to StartConversationView
+    user_id        = serializers.UUIDField(source='user.id', read_only=True)
     skills         = SkillSerializer(many=True, read_only=True)
     certifications = CertificationSerializer(many=True, read_only=True)
     portfolio      = PortfolioProjectSerializer(many=True, read_only=True)
